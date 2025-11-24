@@ -1,0 +1,31 @@
+/* .ant-modal.final-asset-viewer {
+  width: 75% !important;
+} */
+
+.cn-tabs .ant-tabs-content {
+  height: 100%;
+  overflow: hidden;
+}
+
+.cn-tabs .ant-tabs-content-holder {
+  flex: 1;
+  overflow: auto;
+}
+
+.cn-tabs .ant-tabs-content {
+  overflow-y: auto;
+}
+
+.cn-tabs .ant-tabs-content::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.cn-tabs .ant-tabs-content::-webkit-scrollbar-track {
+  border-radius: 12px;
+}
+
+.cn-tabs .ant-tabs-content::-webkit-scrollbar-thumb {
+  background: lightgray;
+  border-radius: 12px;
+}
