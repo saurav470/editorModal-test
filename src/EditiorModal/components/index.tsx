@@ -8,3 +8,4 @@ export { EditorPreview } from "./EditorPreview";
 export { EditorContent } from "./EditorContent";
 export { default as EditWarning } from "./EditWarning";
 export { EnhancedInput, EnhancedTextArea } from "./EnhancedInput";
+export { GrapesJSEditorModal } from "./GrapesJSEditorModal";

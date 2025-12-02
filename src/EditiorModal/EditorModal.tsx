@@ -16,7 +16,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Modal, Row, Col, Form } from "antd";
-import { BackendMapping, TabsType, html_id_mapping } from "./constants";
+import { BackendMapping, TabsType, html_id_mapping, scrollBarStyles } from "./constants";
 import {
   removeHighlight,
   injectIframeCustomStyles,
@@ -34,7 +34,8 @@ import {
   EditorModalHeader,
   RegenerateModal,
   EditorPreview,
-  EditorContent
+  EditorContent,
+  GrapesJSEditorModal
 } from './components';
 import type { EditorModalProps, NonclaimItem } from "./types";
 // @ts-ignore
@@ -97,6 +98,9 @@ export function EditorModal({
   const [regenerateResponse, setRegenerateResponse] = useState<string>("");
   const [modifiedData, setModifiedData] = useState({ id: 0, version: 0 });
 
+  // GrapesJS Editor state
+  const [grapesJSEditorOpen, setGrapesJSEditorOpen] = useState(false);
+
   // Custom hooks
   const { contextHolder, successMessage, errorMessage, infoMessage } = useMessageNotification();
   const { iframeContent, setIframeContent, iframeLoading, setIframeLoading } = useIframeContent({
@@ -128,7 +132,15 @@ export function EditorModal({
   }, [open]);
 
   // Set form values and update iframe
+  // NOTE: This effect should NOT run after GrapesJS saves, as it would overwrite HTML structure changes
   useEffect(() => {
+    // Skip if GrapesJS editor was just used (check if grapesJSEditorOpen was recently true)
+    // This prevents overwriting HTML structure changes from GrapesJS
+    if (grapesJSEditorOpen) {
+      console.log('Skipping editData effect - GrapesJS editor is open');
+      return;
+    }
+
     const formValues = {
       subject: editData.subject || "",
       preheader: editData.preheader || "",
@@ -149,7 +161,7 @@ export function EditorModal({
         updateIframeContent(formValues);
       }, 100);
     }
-  }, [editData, form, open]);
+  }, [editData, form, open, grapesJSEditorOpen]);
 
   // Set selected field when switching to image tab
   useEffect(() => {
@@ -266,11 +278,19 @@ export function EditorModal({
     updateIframeContent(form.getFieldsValue());
 
     injectIframeCustomStyles(iframeRef.current!);
-    const htmlId = selectedfield.toLowerCase().startsWith('nonclaim_') ||
-      selectedfield.toLowerCase().startsWith('claim_')
-      ? selectedfield.toLowerCase()
-      : html_id_mapping[selectedfield as keyof typeof html_id_mapping];
-    iframeScrollAndHighlight(iframeRef.current!, htmlId);
+
+    // Only scroll and highlight if selectedfield is not empty
+    if (selectedfield) {
+      const htmlId = selectedfield.toLowerCase().startsWith('nonclaim_') ||
+        selectedfield.toLowerCase().startsWith('claim_')
+        ? selectedfield.toLowerCase()
+        : html_id_mapping[selectedfield as keyof typeof html_id_mapping];
+
+      // Only call if htmlId is defined
+      if (htmlId) {
+        iframeScrollAndHighlight(iframeRef.current!, htmlId);
+      }
+    }
   };
 
   /**
@@ -546,6 +566,136 @@ export function EditorModal({
     return prepareHtmlWithIds(htmlContent, nonclaimData, claimData);
   };
 
+  /**
+   * Handles opening the GrapesJS HTML editor
+   */
+  const handleOpenHtmlEditor = () => {
+    setGrapesJSEditorOpen(true);
+  };
+
+  /**
+   * Handles saving HTML from GrapesJS editor
+   * Updates the iframe content with the new HTML
+   */
+  const handleGrapesJSSave = (html: string, css: string) => {
+    try {
+      if (!iframeRef.current || !iframeRef.current.contentDocument) {
+        errorMessage("Iframe not available");
+        return;
+      }
+
+      const doc = iframeRef.current.contentDocument;
+
+      // Get the existing document structure to preserve it
+      const existingHtml = doc.documentElement.outerHTML;
+      const parser = new DOMParser();
+      const existingDoc = parser.parseFromString(existingHtml, 'text/html');
+
+      // Update body content with new HTML
+      if (existingDoc.body) {
+        existingDoc.body.innerHTML = html;
+      }
+
+      // Add or update style tag with CSS
+      let styleElement = existingDoc.querySelector('style[data-grapesjs]');
+      if (!styleElement) {
+        styleElement = existingDoc.createElement('style');
+        styleElement.setAttribute('data-grapesjs', 'true');
+        const head = existingDoc.head || existingDoc.querySelector('head');
+        if (head) {
+          head.appendChild(styleElement);
+        } else {
+          // If no head, create one
+          const newHead = existingDoc.createElement('head');
+          newHead.appendChild(styleElement);
+          existingDoc.documentElement.insertBefore(newHead, existingDoc.body);
+        }
+      }
+      styleElement.textContent = css;
+
+      // Get the updated HTML
+      const updatedHtml = existingDoc.documentElement.outerHTML;
+
+      console.log('GrapesJS Save - Updated HTML length:', updatedHtml.length);
+      console.log('GrapesJS Save - HTML preview:', updatedHtml.substring(0, 200));
+
+      // CRITICAL: Update iframeContent state FIRST
+      // This will trigger the useEffect in useIframeContent hook to update the srcdoc
+      setIframeContent(updatedHtml);
+
+      // Also directly update the iframe srcdoc IMMEDIATELY to ensure changes are visible
+      // This is more reliable than doc.write() which can have timing issues
+      if (iframeRef.current) {
+        console.log('GrapesJS Save - Updating iframe srcdoc directly');
+        iframeRef.current.srcdoc = scrollBarStyles + updatedHtml;
+      }
+
+      // Wait for iframe to reload, then inject custom styles and preserve form field values
+      setTimeout(() => {
+        if (iframeRef.current && iframeRef.current.contentDocument) {
+          console.log('GrapesJS Save - Iframe reloaded, injecting styles');
+
+          // Re-inject custom styles for interactivity
+          injectIframeCustomStyles(iframeRef.current);
+
+          // IMPORTANT: Update form field values to preserve them in the new HTML
+          // This ensures that form fields (subject, preheader, etc.) are preserved
+          // but doesn't overwrite the HTML structure changes from GrapesJS
+          const currentValues = form.getFieldsValue();
+          updateIframeContent(currentValues);
+
+          // Verify the iframe content after update
+          const iframeDoc = iframeRef.current.contentDocument;
+          if (iframeDoc) {
+            console.log('GrapesJS Save - Iframe body HTML length after update:', iframeDoc.body?.innerHTML.length || 0);
+            console.log('GrapesJS Save - Iframe body preview:', iframeDoc.body?.innerHTML.substring(0, 200) || 'No body');
+          }
+        } else {
+          console.warn('GrapesJS Save - Iframe not available after timeout');
+        }
+      }, 300);
+
+      successMessage("HTML and layout updated successfully! Changes are now visible in the Asset Editor.");
+    } catch (error) {
+      console.error("Error updating HTML from GrapesJS editor:", error);
+      errorMessage("Failed to update HTML content");
+    }
+  };
+
+  /**
+   * Gets current HTML content from iframe for GrapesJS editor
+   * Extracts the body content for editing, preserving exact DOM structure
+   * This is critical for accurate hover/selection in GrapesJS
+   */
+  const getCurrentHtmlForGrapesJS = (): string => {
+    if (iframeRef.current && iframeRef.current.contentDocument) {
+      const doc = iframeRef.current.contentDocument;
+      // Get body content - GrapesJS works best with body content
+      const body = doc.body;
+      if (body) {
+        // Get all styles from the document head to preserve styling
+        const styles = Array.from(doc.querySelectorAll('style')).map(style => style.outerHTML).join('\n');
+
+        // Clone the body to avoid modifying the original
+        // Use outerHTML to preserve exact structure including attributes
+        const bodyHTML = body.innerHTML;
+
+        // Return HTML with styles preserved - this ensures exact structure for accurate hover
+        return styles ? `${styles}\n${bodyHTML}` : bodyHTML;
+      }
+    }
+    // Fallback to iframeContent if available
+    if (iframeContent) {
+      // Try to extract body content from full HTML string
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(iframeContent, 'text/html');
+      const styles = Array.from(doc.querySelectorAll('style')).map(style => style.outerHTML).join('\n');
+      const bodyHTML = doc.body?.innerHTML || iframeContent;
+      return styles ? `${styles}\n${bodyHTML}` : bodyHTML;
+    }
+    return '';
+  };
+
   return (
     <>
       {contextHolder}
@@ -584,6 +734,7 @@ export function EditorModal({
             notificationService={NontificationService}
             applyChanges={handleApply}
             hasImageChanges={heroImage !== hero_image}
+            onOpenHtmlEditor={handleOpenHtmlEditor}
           />
         }
       >
@@ -664,6 +815,14 @@ export function EditorModal({
           )}
         </Row>
       </Modal>
+
+      {/* GrapesJS HTML & Layout Editor Modal */}
+      <GrapesJSEditorModal
+        open={grapesJSEditorOpen}
+        onClose={() => setGrapesJSEditorOpen(false)}
+        initialHtml={getCurrentHtmlForGrapesJS()}
+        onSave={handleGrapesJSSave}
+      />
     </>
   );
 }

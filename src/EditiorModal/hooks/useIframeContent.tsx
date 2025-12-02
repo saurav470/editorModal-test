@@ -7,7 +7,7 @@
  * - Updating iframe srcdoc when content changes
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { scrollBarStyles } from "../constants";
 import { attachNonclaimIdsToDoc } from "../utils";
 import type { NonclaimItem } from "../types";
@@ -68,11 +68,21 @@ export const useIframeContent = ({
   // Initialize iframe content ONCE on mount
   // Note: Nonclaim IDs are already in HTML from backend, same as claims
   // IMPORTANT: Do NOT watch nonclaimData here - that causes full iframe reloads on every edit!
+  // CRITICAL: This effect should ONLY run when iframeInitContent changes (initial load),
+  // NOT when iframeContent is updated from GrapesJS or other sources
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    // Skip if this is not the initial mount and iframeContent has been manually set
+    // This prevents overwriting GrapesJS edits
+    if (!isInitialMount.current && iframeContent && iframeContent !== iframeInitContent) {
+      console.log('useIframeContent - Skipping reset, iframeContent was manually updated');
+      return;
+    }
+
     if (!iframeInitContent) return;
 
     // IDs are already in HTML from backend, so we can use the content directly
-    // The attachNonclaimIdsToDoc function now just ensures IDs are set correctly (no text matching)
+    // The attachNonclaimIdsToDoc function now just ensures IDs and attributes are set (finds by ID, no text matching)
     if (nonclaimData && nonclaimData.length > 0) {
       try {
         const parser = new DOMParser();
@@ -81,7 +91,10 @@ export const useIframeContent = ({
         attachNonclaimIdsToDoc(doc, nonclaimData);
         const processed = doc.documentElement.outerHTML;
         // Only update state if different to avoid extra renders
-        if (processed !== iframeContent) setIframeContent(processed);
+        if (processed !== iframeContent) {
+          console.log('useIframeContent - Setting initial processed content');
+          setIframeContent(processed);
+        }
       } catch (err) {
         console.error('Error processing initial iframe content', err);
         // Fallback: keep original content
@@ -89,14 +102,20 @@ export const useIframeContent = ({
       }
     } else {
       // No nonclaim items — ensure state contains the raw initial content
-      if (iframeInitContent !== iframeContent) setIframeContent(iframeInitContent);
+      if (iframeInitContent !== iframeContent) {
+        console.log('useIframeContent - Setting initial content (no nonclaim)');
+        setIframeContent(iframeInitContent);
+      }
     }
+
+    isInitialMount.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [iframeInitContent]); // Only watch iframeInitContent, NOT nonclaimData!
 
   // Update iframe srcdoc when content or state changes
   useEffect(() => {
     if (iframeContent && iframeRef.current) {
+      console.log('useIframeContent - Updating srcdoc, content length:', iframeContent.length);
       iframeRef.current.srcdoc = scrollBarStyles + iframeContent;
     }
   }, [iframeContent, iframeRef]);

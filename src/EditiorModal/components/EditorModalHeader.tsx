@@ -19,6 +19,7 @@ export function EditorModalHeader({
   applyChanges,
   modifiedData,
   hasImageChanges,
+  onOpenHtmlEditor,
 
 }: {
   regenerateModal: { open: boolean; field: string; fieldPath: any[] }
@@ -41,6 +42,7 @@ export function EditorModalHeader({
     version: number;
   }
   hasImageChanges: boolean
+  onOpenHtmlEditor?: () => void
 
 }) {
   const [discardModalVisible, setDiscardModalVisible] = useState(false)
@@ -79,6 +81,15 @@ export function EditorModalHeader({
                 {`Preview`}
               </Button>
             )} */}
+            {!regenerateModal.open && onOpenHtmlEditor && (
+              <Button 
+                onClick={onOpenHtmlEditor} 
+                style={{ color: "rgba(3, 78, 162, 1)" }}
+                title="Open HTML & Layout Editor"
+              >
+                Edit HTML & Layout
+              </Button>
+            )}
             <Button onClick={() => (regenerateModal.open ? applyChanges(modifiedData.id, modifiedData.version) : onOk())} style={{ color: "rgba(3, 78, 162, 1)" }}>
               {regenerateModal.open ? `Apply ${modifiedData.version !== 0 ? `V${modifiedData.version}` : ""}` : `Save`}
             </Button>

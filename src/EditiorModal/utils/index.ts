@@ -45,11 +45,14 @@ export const clearSelectedAssetFieldsFromIframe = (iframeRef: React.RefObject<HT
  * @param iframe - The iframe element
  * @param selectedfieldHtmlId - HTML ID of the element to highlight
  */
-export const iframeScrollAndHighlight = (iframe: HTMLIFrameElement, selectedfieldHtmlId: string): void => {
+export const iframeScrollAndHighlight = (iframe: HTMLIFrameElement, selectedfieldHtmlId: string | undefined): void => {
   console.log("iframeScrollAndHighlight called with:", { selectedfieldHtmlId });
-  if (selectedfieldHtmlId === "nonclaim_container") {
-    return
+  
+  // Early return if selectedfieldHtmlId is undefined, null, or empty
+  if (!selectedfieldHtmlId || selectedfieldHtmlId === "nonclaim_container") {
+    return;
   }
+  
   console.log("Proceeding to highlight and scroll to:", selectedfieldHtmlId);
   try {
     // Access the iframe's document

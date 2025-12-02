@@ -1,0 +1,193 @@
+/* GrapesJS Editor Modal Styles */
+/* Ensure GrapesJS styles are not overridden by Ant Design */
+
+#grapesjs-editor-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure GrapesJS editor container has proper dimensions */
+#grapesjs-editor-container .gjs-editor {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Ensure GrapesJS canvas is visible */
+#grapesjs-editor-container .gjs-cv-canvas {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Override any Ant Design styles that might interfere */
+#grapesjs-editor-container * {
+  box-sizing: border-box;
+}
+
+/* Ensure GrapesJS panels are visible */
+#grapesjs-editor-container .gjs-pn-panels {
+  display: flex !important;
+}
+
+#grapesjs-editor-container .gjs-pn-panel {
+  display: block !important;
+}
+
+/* Custom Toolbar Styles */
+.grapesjs-toolbar {
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #333;
+}
+
+/* Blocks panel styling */
+.blocks-container {
+  background-color: #fafafa !important;
+  color: #333 !important;
+}
+
+/* Style GrapesJS blocks */
+.blocks-container .gjs-block {
+  background-color: #fff !important;
+  color: #333 !important;
+  border: 1px solid #e0e0e0 !important;
+  margin: 5px 0 !important;
+  padding: 10px !important;
+  border-radius: 4px !important;
+  cursor: grab !important;
+  transition: all 0.2s ease !important;
+}
+
+.blocks-container .gjs-block:hover {
+  background-color: #f0f0f0 !important;
+  border-color: #1890ff !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.blocks-container .gjs-block:active {
+  cursor: grabbing !important;
+}
+
+/* Block categories */
+.blocks-container .gjs-blocks-c {
+  padding: 10px !important;
+}
+
+.blocks-container .gjs-blocks-c-title {
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin-bottom: 10px !important;
+  padding: 8px 0 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+/* Style GrapesJS style manager in dark theme */
+.styles-container .gjs-sm-sector,
+.traits-container .gjs-trt-trait {
+  background-color: #2d2d2d !important;
+  color: #fff !important;
+}
+
+.styles-container .gjs-sm-property {
+  background-color: #3d3d3d !important;
+  color: #fff !important;
+}
+
+/* Hide default GrapesJS panels/buttons and unnecessary UI */
+.gjs-pn-btn {
+  display: none !important;
+}
+
+/* Hide device manager */
+.gjs-devices-c {
+  display: none !important;
+}
+
+/* Hide layer manager */
+.gjs-lm {
+  display: none !important;
+}
+
+/* Hide style manager */
+.gjs-sm {
+  display: none !important;
+}
+
+/* Hide trait manager */
+.gjs-trt-trait {
+  display: none !important;
+}
+
+/* Hide selector manager */
+.gjs-sm-select {
+  display: none !important;
+}
+
+/* Ensure blocks panel is visible */
+.gjs-blocks-c {
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Disable double-click editing - prevent contentEditable */
+.gjs-cv-canvas [contenteditable="true"] {
+  contenteditable: false !important;
+}
+
+/* Hide RTE toolbar if it appears */
+.gjs-rte-toolbar,
+.gjs-rte-toolbar * {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Prevent RTE activation */
+.gjs-cv-canvas .gjs-rte-active {
+  pointer-events: none !important;
+}
+
+/* Remove black borders - only apply to wrapper elements, NOT content */
+.gjs-cv-canvas {
+  background-color: #fff !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Editor wrapper - white background */
+.gjs-editor {
+  background-color: #fff !important;
+}
+
+/* Canvas frames wrapper - white background */
+.gjs-cv-canvas__frames {
+  background-color: #fff !important;
+}
+
+/* Editor container - white background */
+.gjs-editor-cont {
+  background-color: #fff !important;
+}
+
+/* Canvas background layer - white */
+.gjs-cv-canvas-bg {
+  background-color: #fff !important;
+}
+
+/* Iframe - transparent so HTML content is visible */
+.gjs-cv-canvas iframe {
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* IMPORTANT: Do NOT apply white background to content inside canvas/editor */
+/* This allows the actual HTML content to be visible with its own styles */
